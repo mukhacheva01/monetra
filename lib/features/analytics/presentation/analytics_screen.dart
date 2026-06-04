@@ -5,6 +5,7 @@ import '../../../shared/widgets/section_card.dart';
 import '../../budgets/application/budgets_controller.dart';
 import '../../budgets/domain/budget_summary.dart';
 import '../../transactions/application/transactions_controller.dart';
+import '../../transactions/domain/transaction_entry.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
@@ -15,6 +16,21 @@ class AnalyticsScreen extends ConsumerWidget {
     final totalExpenses = ref.watch(totalExpensesProvider);
     final totalIncome = ref.watch(totalIncomeProvider);
     final uncategorizedSpend = ref.watch(uncategorizedMonthlySpendProvider);
+    final transactions = ref.watch(transactionsProvider);
+
+    final now = DateTime.now();
+    final thisMonthExpenses = _sumExpensesForMonth(
+      transactions: transactions,
+      year: now.year,
+      month: now.month,
+    );
+    final previousMonth = DateTime(now.year, now.month - 1);
+    final previousMonthExpenses = _sumExpensesForMonth(
+      transactions: transactions,
+      year: previousMonth.year,
+      month: previousMonth.month,
+    );
+    final delta = thisMonthExpenses - previousMonthExpenses;
 
     return SafeArea(
       child: ListView(
@@ -38,6 +54,28 @@ class AnalyticsScreen extends ConsumerWidget {
                     value: '${totalExpenses.round()} ₽',
                     tone: const Color(0xFFFF8A65),
                   ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SectionCard(
+            title: 'Сравнение месяцев',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SignalLine(
+                  label: 'Текущий месяц',
+                  value: '${thisMonthExpenses.round()} ₽',
+                ),
+                _SignalLine(
+                  label: 'Прошлый месяц',
+                  value: '${previousMonthExpenses.round()} ₽',
+                ),
+                _SignalLine(
+                  label: 'Разница',
+                  value:
+                      '${delta >= 0 ? '+' : ''}${delta.round()} ₽',
                 ),
               ],
             ),
@@ -71,6 +109,18 @@ class AnalyticsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  double _sumExpensesForMonth({
+    required List<TransactionEntry> transactions,
+    required int year,
+    required int month,
+  }) {
+    return transactions.where((entry) {
+      return entry.isExpense &&
+          entry.createdAt.year == year &&
+          entry.createdAt.month == month;
+    }).fold<double>(0, (sum, entry) => sum + entry.amount);
   }
 }
 

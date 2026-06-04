@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/formatters/date_formatter.dart';
 import '../../../../features/categories/domain/category_item.dart';
 import '../../application/transactions_controller.dart';
 import '../../domain/transaction_entry.dart';
@@ -28,12 +29,14 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   final _noteController = TextEditingController();
   String? _selectedCategoryId;
   late TransactionType _selectedType;
+  late DateTime _selectedDate;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
     _selectedType = widget.entry?.type ?? widget.initialType;
+    _selectedDate = widget.entry?.createdAt ?? DateTime.now();
     _amountController.text = widget.entry?.amount.toStringAsFixed(0) ?? '';
     _noteController.text = widget.entry?.note ?? '';
     _selectedCategoryId = widget.entry?.categoryId;
@@ -155,6 +158,14 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 },
               ),
               const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Дата операции'),
+                subtitle: Text(DateFormatter.short(_selectedDate)),
+                trailing: const Icon(Icons.calendar_month_outlined),
+                onTap: _pickDate,
+              ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _noteController,
                 decoration: const InputDecoration(
@@ -184,6 +195,27 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     );
   }
 
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDate = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _selectedDate.hour,
+          _selectedDate.minute,
+        );
+      });
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate() || _selectedCategoryId == null) {
       return;
@@ -205,6 +237,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         categoryId: _selectedCategoryId!,
         note: _noteController.text.trim(),
         type: _selectedType,
+        createdAt: _selectedDate,
       );
     } else {
       await controller.updateTransaction(
@@ -213,6 +246,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         categoryId: _selectedCategoryId!,
         note: _noteController.text.trim(),
         type: _selectedType,
+        createdAt: _selectedDate,
       );
     }
 

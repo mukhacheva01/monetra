@@ -106,13 +106,14 @@ class TransactionsController extends StateNotifier<List<TransactionEntry>> {
     required String categoryId,
     required String note,
     required TransactionType type,
+    DateTime? createdAt,
   }) async {
     final entry = TransactionEntry(
       id: 'tx_${DateTime.now().microsecondsSinceEpoch}',
       amount: amount,
       type: type,
       categoryId: categoryId,
-      createdAt: DateTime.now(),
+      createdAt: createdAt ?? DateTime.now(),
       note: note.isEmpty ? null : note,
     );
 
@@ -125,10 +126,12 @@ class TransactionsController extends StateNotifier<List<TransactionEntry>> {
     required String categoryId,
     required String note,
     required TransactionType type,
+    DateTime? createdAt,
   }) async {
     final updated = original.copyWith(
       amount: amount,
       categoryId: categoryId,
+      createdAt: createdAt ?? original.createdAt,
       note: note.isEmpty ? null : note,
       type: type,
     );

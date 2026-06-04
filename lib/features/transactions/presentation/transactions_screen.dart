@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/formatters/date_formatter.dart';
 import '../../../core/formatters/money_formatter.dart';
+import '../../../shared/widgets/section_card.dart';
 import '../../categories/domain/category_item.dart';
 import '../application/transactions_controller.dart';
 import '../domain/transaction_entry.dart';
 import 'widgets/transaction_form_sheet.dart';
-import '../../../shared/widgets/section_card.dart';
 
 enum TransactionTypeFilter {
   all,
@@ -212,8 +213,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           entry.createdAt.year == now.year && entry.createdAt.month == now.month,
       };
 
-      final categoryMatches = _categoryFilter == 'all' ||
-          entry.categoryId == _categoryFilter;
+      final categoryMatches =
+          _categoryFilter == 'all' || entry.categoryId == _categoryFilter;
 
       return typeMatches && periodMatches && categoryMatches;
     }).toList(growable: false);
@@ -367,7 +368,14 @@ class _TransactionTile extends StatelessWidget {
         child: Text(category.emoji),
       ),
       title: Text(category.name),
-      subtitle: Text(entry.note ?? 'Без заметки'),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(entry.note ?? 'Без заметки'),
+          const SizedBox(height: 2),
+          Text(DateFormatter.short(entry.createdAt)),
+        ],
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
