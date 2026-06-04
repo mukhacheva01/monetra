@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_strings.dart';
 import '../../../core/formatters/money_formatter.dart';
+import '../../budgets/application/budgets_controller.dart';
 import '../../transactions/application/transactions_controller.dart';
 import '../../../shared/widgets/section_card.dart';
 

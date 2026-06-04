@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../features/budgets/domain/budget_entry.dart';
 import '../../features/transactions/domain/transaction_entry.dart';
 import 'app_database.dart';
 
@@ -48,6 +49,7 @@ class SqliteAppDatabase implements AppDatabase {
   Future<void> clearAll() async {
     final db = await database;
     db.execute('DELETE FROM transactions;');
+    db.execute('DELETE FROM budgets;');
   }
 
   @override
@@ -59,6 +61,12 @@ class SqliteAppDatabase implements AppDatabase {
   Future<int> transactionsCount() async {
     final db = await database;
     final result = db.select('SELECT COUNT(*) AS count FROM transactions;');
+    return result.first['count'] as int;
+  }
+
+  Future<int> budgetsCount() async {
+    final db = await database;
+    final result = db.select('SELECT COUNT(*) AS count FROM budgets;');
     return result.first['count'] as int;
   }
 
@@ -152,6 +160,84 @@ class SqliteAppDatabase implements AppDatabase {
     }
   }
 
+  Future<List<BudgetEntry>> getBudgets() async {
+    final db = await database;
+    final rows = db.select(
+      '''
+      SELECT id, category_id, month_key, limit_amount
+      FROM budgets
+      ORDER BY month_key DESC, category_id ASC;
+      ''',
+    );
+
+    return rows.map((row) {
+      return BudgetEntry(
+        id: row['id'] as String,
+        categoryId: row['category_id'] as String,
+        monthKey: row['month_key'] as String,
+        limit: row['limit_amount'] as double,
+      );
+    }).toList(growable: false);
+  }
+
+  Future<void> insertBudget(BudgetEntry entry) async {
+    final db = await database;
+    final statement = db.prepare(
+      '''
+      INSERT INTO budgets (
+        id,
+        category_id,
+        month_key,
+        limit_amount
+      ) VALUES (?, ?, ?, ?);
+      ''',
+    );
+
+    try {
+      statement.execute([
+        entry.id,
+        entry.categoryId,
+        entry.monthKey,
+        entry.limit,
+      ]);
+    } finally {
+      statement.dispose();
+    }
+  }
+
+  Future<void> updateBudget(BudgetEntry entry) async {
+    final db = await database;
+    final statement = db.prepare(
+      '''
+      UPDATE budgets
+      SET category_id = ?, month_key = ?, limit_amount = ?
+      WHERE id = ?;
+      ''',
+    );
+
+    try {
+      statement.execute([
+        entry.categoryId,
+        entry.monthKey,
+        entry.limit,
+        entry.id,
+      ]);
+    } finally {
+      statement.dispose();
+    }
+  }
+
+  Future<void> deleteBudget(String budgetId) async {
+    final db = await database;
+    final statement = db.prepare('DELETE FROM budgets WHERE id = ?;');
+
+    try {
+      statement.execute([budgetId]);
+    } finally {
+      statement.dispose();
+    }
+  }
+
   Future<void> seedTransactions(List<TransactionEntry> entries) async {
     final db = await database;
     db.execute('BEGIN TRANSACTION;');
@@ -192,6 +278,42 @@ class SqliteAppDatabase implements AppDatabase {
     }
   }
 
+  Future<void> seedBudgets(List<BudgetEntry> entries) async {
+    final db = await database;
+    db.execute('BEGIN TRANSACTION;');
+
+    try {
+      final statement = db.prepare(
+        '''
+        INSERT INTO budgets (
+          id,
+          category_id,
+          month_key,
+          limit_amount
+        ) VALUES (?, ?, ?, ?);
+        ''',
+      );
+
+      try {
+        for (final entry in entries) {
+          statement.execute([
+            entry.id,
+            entry.categoryId,
+            entry.monthKey,
+            entry.limit,
+          ]);
+        }
+      } finally {
+        statement.dispose();
+      }
+
+      db.execute('COMMIT;');
+    } catch (_) {
+      db.execute('ROLLBACK;');
+      rethrow;
+    }
+  }
+
   void _createSchema(Database db) {
     db.execute(
       '''
@@ -202,6 +324,16 @@ class SqliteAppDatabase implements AppDatabase {
         category_id TEXT NOT NULL,
         created_at TEXT NOT NULL,
         note TEXT
+      );
+      ''',
+    );
+    db.execute(
+      '''
+      CREATE TABLE IF NOT EXISTS budgets (
+        id TEXT PRIMARY KEY,
+        category_id TEXT NOT NULL,
+        month_key TEXT NOT NULL,
+        limit_amount REAL NOT NULL
       );
       ''',
     );

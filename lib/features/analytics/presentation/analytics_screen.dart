@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../transactions/application/transactions_controller.dart';
 import '../../../shared/widgets/section_card.dart';
+import '../../budgets/application/budgets_controller.dart';
+import '../../budgets/domain/budget_summary.dart';
+import '../../transactions/application/transactions_controller.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
@@ -10,20 +12,60 @@ class AnalyticsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final budgets = ref.watch(budgetSummariesProvider);
+    final totalExpenses = ref.watch(totalExpensesProvider);
+    final totalIncome = ref.watch(totalIncomeProvider);
+    final uncategorizedSpend = ref.watch(uncategorizedMonthlySpendProvider);
 
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           SectionCard(
+            title: 'Быстрый срез',
+            child: Row(
+              children: [
+                Expanded(
+                  child: _MetricTile(
+                    label: 'Доходы',
+                    value: '${totalIncome.round()} ₽',
+                    tone: const Color(0xFF1DAA7A),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MetricTile(
+                    label: 'Расходы',
+                    value: '${totalExpenses.round()} ₽',
+                    tone: const Color(0xFFFF8A65),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SectionCard(
             title: 'Структура расходов',
             child: _BarsPreview(budgets: budgets),
           ),
           const SizedBox(height: 16),
-          const SectionCard(
-            title: 'Что появится дальше',
-            child: Text(
-              'Следующим этапом сюда добавятся круговые и линейные графики, сравнение месяцев и простые финансовые инсайты.',
+          SectionCard(
+            title: 'Бюджетные сигналы',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SignalLine(
+                  label: 'Лимитов на месяц',
+                  value: '${budgets.length}',
+                ),
+                _SignalLine(
+                  label: 'Нераспределенные траты',
+                  value: '${uncategorizedSpend.round()} ₽',
+                ),
+                _SignalLine(
+                  label: 'Текущий месяц',
+                  value: currentMonthKey(),
+                ),
+              ],
             ),
           ),
         ],
@@ -37,7 +79,7 @@ class _BarsPreview extends StatelessWidget {
     required this.budgets,
   });
 
-  final List<dynamic> budgets;
+  final List<BudgetSummary> budgets;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +122,70 @@ class _BarsPreview extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+class _MetricTile extends StatelessWidget {
+  const _MetricTile({
+    required this.label,
+    required this.value,
+    required this.tone,
+  });
+
+  final String label;
+  final String value;
+  final Color tone;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SignalLine extends StatelessWidget {
+  const _SignalLine({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }

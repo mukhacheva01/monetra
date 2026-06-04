@@ -1,4 +1,4 @@
-import '../../features/budgets/domain/budget_summary.dart';
+import '../../features/budgets/domain/budget_entry.dart';
 import '../../features/categories/domain/category_item.dart';
 import '../../features/transactions/domain/transaction_entry.dart';
 
@@ -79,23 +79,23 @@ class DemoData {
     ),
   ];
 
-  static const budgets = [
-    BudgetSummary(
+  static const budgetEntries = [
+    BudgetEntry(
+      id: 'budget_food_2026_06',
       categoryId: 'food',
-      title: 'Еда',
-      spent: 12400,
+      monthKey: '2026-06',
       limit: 18000,
     ),
-    BudgetSummary(
+    BudgetEntry(
+      id: 'budget_transport_2026_06',
       categoryId: 'transport',
-      title: 'Транспорт',
-      spent: 5100,
+      monthKey: '2026-06',
       limit: 7000,
     ),
-    BudgetSummary(
+    BudgetEntry(
+      id: 'budget_home_2026_06',
       categoryId: 'home',
-      title: 'Дом',
-      spent: 8200,
+      monthKey: '2026-06',
       limit: 10000,
     ),
   ];

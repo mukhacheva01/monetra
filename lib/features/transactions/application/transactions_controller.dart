@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/sqlite_app_database.dart';
 import '../../../core/demo/demo_data.dart';
-import '../../budgets/domain/budget_summary.dart';
 import '../../categories/domain/category_item.dart';
 import '../data/sqlite_transactions_repository.dart';
 import '../data/transactions_repository.dart';
@@ -46,35 +45,6 @@ final totalIncomeProvider = Provider<double>((ref) {
       .watch(transactionsProvider)
       .where((entry) => !entry.isExpense)
       .fold<double>(0, (sum, entry) => sum + entry.amount);
-});
-
-final budgetSummariesProvider = Provider<List<BudgetSummary>>((ref) {
-  final transactions = ref.watch(expenseTransactionsProvider);
-  final categories = ref.watch(categoriesProvider);
-  final baseBudgets = DemoData.budgets;
-
-  return baseBudgets.map((budget) {
-    final category = categories.firstWhere(
-      (item) => item.id == budget.categoryId,
-      orElse: () => CategoryItem(
-        id: budget.categoryId,
-        name: budget.title,
-        emoji: '*',
-        colorHex: 0xFF1DAA7A,
-      ),
-    );
-
-    final spent = transactions
-        .where((entry) => entry.categoryId == budget.categoryId)
-        .fold<double>(0, (sum, entry) => sum + entry.amount);
-
-    return BudgetSummary(
-      categoryId: budget.categoryId,
-      title: category.name,
-      spent: spent,
-      limit: budget.limit,
-    );
-  }).toList(growable: false);
 });
 
 final topExpenseCategoryProvider = Provider<CategoryItem?>((ref) {
